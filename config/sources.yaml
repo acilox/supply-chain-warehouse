@@ -1,0 +1,28 @@
+sources:
+  - name: sap_orders
+    type: sap_hana
+    schema: SAPABAP1
+    table: VBAK
+    watermark_col: ERDAT
+    target_fact: fact_order
+    schedule: "0 2 * * *"
+
+  - name: wms_shipments
+    type: oracle
+    schema: WMS
+    table: SHIPMENTS
+    watermark_col: LAST_UPDATED
+    target_fact: fact_shipment
+    schedule: "0 3 * * *"
+
+  - name: iot_telemetry
+    type: mqtt
+    topic: supply_chain_dw/telemetry/+
+    target_fact: fact_telemetry
+    schedule: "*/15 * * * *"
+
+  - name: weather_snapshots
+    type: rest_api
+    endpoint: openweathermap
+    target_fact: fact_weather
+    schedule: "0 * * * *"

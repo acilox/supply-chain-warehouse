@@ -1,0 +1,100 @@
+"""Pydantic models for supply-chain domain."""
+
+from __future__ import annotations
+
+from datetime import date, datetime
+from decimal import Decimal
+from enum import Enum
+from typing import Optional
+
+from pydantic import BaseModel, ConfigDict, Field
+
+
+class OrderStatus(str, Enum):
+    PENDING = "PENDING"
+    CONFIRMED = "CONFIRMED"
+    PICKING = "PICKING"
+    SHIPPED = "SHIPPED"
+    DELIVERED = "DELIVERED"
+    CANCELLED = "CANCELLED"
+
+
+class Order(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    order_id: str = Field(..., max_length=64)
+    customer_id: str = Field(..., max_length=64)
+    supplier_id: str = Field(..., max_length=64)
+    warehouse_id: str = Field(..., max_length=64)
+    product_id: str = Field(..., max_length=64)
+    quantity_ordered: int = Field(..., ge=1)
+    quantity_shipped: int = Field(..., ge=0)
+    unit_price: Decimal = Field(..., ge=0)
+    currency: str = Field("USD", max_length=3)
+    order_date: date
+    requested_delivery: date
+    actual_delivery: Optional[date] = None
+    status: OrderStatus = OrderStatus.PENDING
+    source_system: str
+    extracted_at: datetime
+
+
+class Shipment(BaseModel):
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    shipment_id: str
+    order_id: str
+    carrier_id: str
+    tracking_number: Optional[str] = None
+    origin_warehouse: str
+    destination_zip: str
+    weight_kg: Optional[Decimal] = None
+    shipped_at: datetime
+    expected_delivery: date
+    actual_delivery: Optional[date] = None
+    is_on_time: Optional[bool] = None
+    is_in_full: Optional[bool] = None
+    source_system: str
+    extracted_at: datetime
+
+
+class Supplier(BaseModel):
+    """SCD Type 2 supplier dimension."""
+
+    supplier_id: str
+    name: str
+    country: str
+    city: Optional[str] = None
+    quality_tier: str = "STANDARD"
+    contract_terms_days: int = 30
+    effective_from: datetime
+    effective_to: Optional[datetime] = None
+    is_current: bool = True
+
+
+class TelemetryReading(BaseModel):
+    """IoT sensor reading from MQTT."""
+
+    model_config = ConfigDict(str_strip_whitespace=True)
+
+    device_id: str
+    shipment_id: Optional[str] = None
+    timestamp: datetime
+    temperature_c: Optional[float] = None
+    humidity_pct: Optional[float] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    shock_g: Optional[float] = None
+    battery_pct: Optional[float] = None
+
+
+class WeatherSnapshot(BaseModel):
+    """OpenWeather one-call snapshot."""
+
+    location_id: str
+    timestamp: datetime
+    temp_c: float
+    humidity_pct: float
+    wind_kmh: float
+    condition: str
+    precip_mm: float = 0.0
