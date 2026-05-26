@@ -1,18 +1,22 @@
 # supply-chain-warehouse
 
-A Kimball-style data warehouse built on Snowflake that consolidates
-orders (SAP HANA), warehouse picking activity (Oracle WMS), IoT telemetry
-(MQTT) and external weather/carrier APIs into facts and SCD-2 dimensions,
-with a KPI layer on top.
+A reference implementation of a Kimball-style supply-chain data
+warehouse on Snowflake. Consolidates orders from SAP HANA, warehouse
+picking activity from Oracle WMS, IoT shipment telemetry over MQTT and
+external weather and carrier APIs into conformed facts and SCD-2
+dimensions, with a KPI computation layer on top.
 
-## Problem
+## Problem domain
 
-The supply-chain ops team wanted one place to answer: are we shipping
-on-time? Where is OTIF dropping? Which lanes are most affected by
-weather? The data lived in five places. This is the pipeline that joins
-them.
+Supply-chain operations require a single analytical surface across ERP,
+WMS, in-transit telemetry, and third-party signals (weather, carrier
+tracking) to answer questions like on-time-in-full, fill rate, and
+lane-level performance. The patterns here cover the Kimball build:
+conformed dimensions across order and shipment grain, SCD-2 history for
+slow-moving attributes, IoT windowed aggregation, and a KPI engine that
+operates on the resulting marts.
 
-## Sources & targets
+## Sources and targets
 
 ```
 sources                          targets
@@ -33,10 +37,10 @@ fedex/ups tracking APIs      -->            dim_product [SCD-2],
 ```
 src/supply_chain_dw/
   config/        settings + logging
-  extract/       sap_hana, oracle_wms (TODO), mqtt, weather_api,
-                 carrier_api (TODO)
-  transform/     scd2 (dim builder), iot_processor (windowed +
-                 zscore + cold-chain), kpi_engine, forecasting
+  extract/       sap_hana, oracle_wms (interface stub), mqtt,
+                 weather_api, carrier_api (interface stub)
+  transform/     scd2 builder, iot_processor (windowed + zscore +
+                 cold-chain), kpi_engine, forecasting feature builder
   load/          snowflake_loader (write_pandas + MERGE)
   orchestration/ dag_factory.py — Airflow DAGs from config/sources.yaml
   models/        Order, Shipment, Supplier, TelemetryReading,
@@ -50,7 +54,7 @@ data/sample/          orders.csv (12 rows), telemetry.csv (15 readings,
                       one cold-chain breach)
 ```
 
-## KPIs implemented
+## KPIs
 
 | KPI                | formula                                                |
 | ------------------ | ------------------------------------------------------ |
@@ -59,27 +63,27 @@ data/sample/          orders.csv (12 rows), telemetry.csv (15 readings,
 | Avg lead time      | mean(actual_delivery - order_date) for delivered rows  |
 | Backorder rate     | % of orders where qty_shipped < qty_ordered            |
 
-The functions in `kpi_engine.py` take a DataFrame, so you can drop them
-into a notebook for ad-hoc slicing.
+`kpi_engine.py` operates on DataFrames so the same functions work in
+notebooks for ad-hoc analysis.
 
 ## IoT
 
-`IoTProcessor` does:
+`IoTProcessor` provides:
 
-- pandas `resample` aggregation by device + window (1m / 5m / 1h)
-- cold-chain breach detection on `temperature_c` against the configured
-  min/max (defaults to 2-8 °C for pharma)
+- pandas `resample` aggregation by device and time window (1m / 5m / 1h)
+- cold-chain breach detection against a configurable temperature range
+  (default 2–8 °C for pharma)
 - z-score anomaly detection with a configurable threshold (default 2.5σ)
 
-The sample telemetry CSV includes an obvious breach around 08:25 so you
-can see the alert path fire end-to-end with `make run-sample`.
+The sample telemetry CSV includes a deliberate breach so the alert
+path can be exercised end-to-end with `make run-sample`.
 
 ## DAG generation
 
-Airflow DAGs are generated dynamically from `config/sources.yaml`. Add a
-new source there, restart the scheduler, and it shows up in the UI. The
-DAG factory is intentionally simple (extract → transform → load
-sequence) — the per-source work happens in the right operators.
+Airflow DAGs are generated from `config/sources.yaml`. Adding a new
+source entry and restarting the scheduler exposes a new DAG. The
+factory is intentionally simple (extract → transform → load); per-source
+specialisation lives in the operators themselves.
 
 ## Running locally
 
@@ -97,14 +101,23 @@ Python 3.11, snowflake-connector-python, snowflake-sqlalchemy,
 oracledb, hdbcli (SAP HANA), paho-mqtt, httpx + tenacity, boto3,
 pandas, polars, pyarrow, holidays, pydantic, structlog, Airflow 2.x.
 
-## Open items
+## Design notes
 
-- The Oracle WMS extractor is stubbed (we used a hand-written SQL view
-  in production). Drop-in replacement needed before this runs against a
-  real WMS.
-- The forecasting feature builder produces lag/rolling features and a
-  US holiday flag, but the actual demand model lives in a separate ML
-  repo. There's a clean interface — `ForecastingFeatureBuilder.build()`
-  returns a DataFrame the model can take directly.
-- We never finished the FedEx tracking integration; the auth flow is
-  fiddly and we ended up using a third-party aggregator instead.
+- The Oracle WMS extractor is provided as an interface stub. Real WMS
+  deployments typically use a hand-written SQL view targeting the
+  specific tables in use; the interface is shaped so the extractor
+  drops in without changes elsewhere.
+- The forecasting feature builder produces lag, rolling, and calendar
+  features and exposes them as a flat DataFrame. A demand model (e.g.
+  XGBoost, Prophet, or a deep model) sits downstream and is intentionally
+  out of scope for this repo.
+- The FedEx tracking integration is stubbed. Production deployments
+  typically substitute a tracking aggregator (e.g. AfterShip,
+  ShipEngine) to avoid maintaining N carrier auth flows.
+
+## About this code
+
+Open-source companion to the supply-chain data work done by
+[acilox](https://github.com/acilox). For paid implementation, dimensional
+modelling, or extension of these patterns into a production environment,
+open an issue.
