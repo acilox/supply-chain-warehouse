@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import date
-
 import pandas as pd
 
 from supply_chain_dw.config import get_logger
@@ -48,16 +46,16 @@ class ForecastingFeatureBuilder:
             import holidays  # type: ignore[import-not-found]
 
             us_holidays = holidays.UnitedStates()
-            df["is_holiday"] = df["demand_date"].dt.date.apply(lambda d: d in us_holidays).astype(int)
+            df["is_holiday"] = (
+                df["demand_date"].dt.date.apply(lambda d: d in us_holidays).astype(int)
+            )
         except ImportError:
             df["is_holiday"] = 0
 
         logger.info("forecasting_features_built", rows=len(df), features=df.shape[1])
         return df
 
-    def weather_enrich(
-        self, demand_df: pd.DataFrame, weather_df: pd.DataFrame
-    ) -> pd.DataFrame:
+    def weather_enrich(self, demand_df: pd.DataFrame, weather_df: pd.DataFrame) -> pd.DataFrame:
         """Join weather snapshots into the demand feature table."""
         if demand_df.empty or weather_df.empty:
             return demand_df

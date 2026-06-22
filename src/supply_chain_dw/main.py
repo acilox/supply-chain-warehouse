@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import date
 from pathlib import Path
 
 import pandas as pd
@@ -15,7 +14,6 @@ from supply_chain_dw.transform import (
     ForecastingFeatureBuilder,
     IoTProcessor,
     KPIEngine,
-    SCD2Builder,
 )
 
 app = typer.Typer(name="supply_chain_dw", help="Supply Chain DW CLI", no_args_is_help=True)
@@ -41,7 +39,9 @@ def run(source: str = typer.Option("sample", help="Source (sample|sap|wms|iot|al
         orders_path = Path("data/sample/orders.csv")
         telemetry_path = Path("data/sample/telemetry.csv")
 
-    orders_df = pd.read_csv(orders_path, parse_dates=["order_date", "requested_delivery", "actual_delivery"])
+    orders_df = pd.read_csv(
+        orders_path, parse_dates=["order_date", "requested_delivery", "actual_delivery"]
+    )
     telemetry_df = pd.read_csv(telemetry_path, parse_dates=["timestamp"])
 
     # KPIs
@@ -77,13 +77,18 @@ def run(source: str = typer.Option("sample", help="Source (sample|sap|wms|iot|al
 
     # Forecasting features (demo on a slice)
     demand = (
-        orders_df.groupby([pd.Grouper(key="order_date", freq="D"), "product_id"])
-        ["quantity_ordered"].sum()
+        orders_df.groupby([pd.Grouper(key="order_date", freq="D"), "product_id"])[
+            "quantity_ordered"
+        ]
+        .sum()
         .reset_index()
         .rename(columns={"order_date": "demand_date", "quantity_ordered": "quantity"})
     )
     features = ForecastingFeatureBuilder().build(demand)
-    console.print(f"\n[bold]Forecasting feature rows:[/] {len(features)}  [bold]columns:[/] {features.shape[1]}")
+    console.print(
+        f"\n[bold]Forecasting feature rows:[/] {len(features)}  "
+        f"[bold]columns:[/] {features.shape[1]}"
+    )
 
 
 if __name__ == "__main__":

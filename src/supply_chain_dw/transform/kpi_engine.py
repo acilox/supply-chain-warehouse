@@ -21,7 +21,9 @@ class KPIEngine:
         delivered = orders_df[orders_df["actual_delivery"].notna()]
         if delivered.empty:
             return 0.0
-        on_time = pd.to_datetime(delivered["actual_delivery"]) <= pd.to_datetime(delivered["requested_delivery"])
+        on_time = pd.to_datetime(delivered["actual_delivery"]) <= pd.to_datetime(
+            delivered["requested_delivery"]
+        )
         in_full = delivered["quantity_shipped"] >= delivered["quantity_ordered"]
         return (on_time & in_full).mean() * 100.0
 
@@ -29,9 +31,7 @@ class KPIEngine:
         """% of ordered quantity actually shipped."""
         if orders_df.empty or orders_df["quantity_ordered"].sum() == 0:
             return 0.0
-        return (
-            orders_df["quantity_shipped"].sum() / orders_df["quantity_ordered"].sum() * 100.0
-        )
+        return orders_df["quantity_shipped"].sum() / orders_df["quantity_ordered"].sum() * 100.0
 
     def avg_lead_time_days(self, orders_df: pd.DataFrame) -> float:
         delivered = orders_df[orders_df["actual_delivery"].notna()]

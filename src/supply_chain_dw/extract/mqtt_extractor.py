@@ -7,8 +7,8 @@ and pushes them to a callback (e.g., write to S3/DuckDB).
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from datetime import datetime
-from typing import Callable
 
 from supply_chain_dw.config import get_logger, get_settings
 from supply_chain_dw.models import TelemetryReading

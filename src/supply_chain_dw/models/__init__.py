@@ -4,13 +4,12 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from decimal import Decimal
-from enum import Enum
-from typing import Optional
+from enum import StrEnum
 
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class OrderStatus(str, Enum):
+class OrderStatus(StrEnum):
     PENDING = "PENDING"
     CONFIRMED = "CONFIRMED"
     PICKING = "PICKING"
@@ -33,7 +32,7 @@ class Order(BaseModel):
     currency: str = Field("USD", max_length=3)
     order_date: date
     requested_delivery: date
-    actual_delivery: Optional[date] = None
+    actual_delivery: date | None = None
     status: OrderStatus = OrderStatus.PENDING
     source_system: str
     extracted_at: datetime
@@ -45,15 +44,15 @@ class Shipment(BaseModel):
     shipment_id: str
     order_id: str
     carrier_id: str
-    tracking_number: Optional[str] = None
+    tracking_number: str | None = None
     origin_warehouse: str
     destination_zip: str
-    weight_kg: Optional[Decimal] = None
+    weight_kg: Decimal | None = None
     shipped_at: datetime
     expected_delivery: date
-    actual_delivery: Optional[date] = None
-    is_on_time: Optional[bool] = None
-    is_in_full: Optional[bool] = None
+    actual_delivery: date | None = None
+    is_on_time: bool | None = None
+    is_in_full: bool | None = None
     source_system: str
     extracted_at: datetime
 
@@ -64,11 +63,11 @@ class Supplier(BaseModel):
     supplier_id: str
     name: str
     country: str
-    city: Optional[str] = None
+    city: str | None = None
     quality_tier: str = "STANDARD"
     contract_terms_days: int = 30
     effective_from: datetime
-    effective_to: Optional[datetime] = None
+    effective_to: datetime | None = None
     is_current: bool = True
 
 
@@ -78,14 +77,14 @@ class TelemetryReading(BaseModel):
     model_config = ConfigDict(str_strip_whitespace=True)
 
     device_id: str
-    shipment_id: Optional[str] = None
+    shipment_id: str | None = None
     timestamp: datetime
-    temperature_c: Optional[float] = None
-    humidity_pct: Optional[float] = None
-    latitude: Optional[float] = None
-    longitude: Optional[float] = None
-    shock_g: Optional[float] = None
-    battery_pct: Optional[float] = None
+    temperature_c: float | None = None
+    humidity_pct: float | None = None
+    latitude: float | None = None
+    longitude: float | None = None
+    shock_g: float | None = None
+    battery_pct: float | None = None
 
 
 class WeatherSnapshot(BaseModel):

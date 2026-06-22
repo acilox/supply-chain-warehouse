@@ -47,6 +47,7 @@ class SnowflakeStarSchemaLoader:
         if df.empty:
             return 0
         from snowflake.connector.pandas_tools import write_pandas  # type: ignore[import-not-found]
+
         success, _, nrows, _ = write_pandas(
             self._conn, df, table_name=table.upper(), quote_identifiers=False
         )

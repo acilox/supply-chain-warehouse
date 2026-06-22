@@ -61,12 +61,22 @@ class SCD2Builder:
             if new_col in merged.columns and cur_col in merged.columns:
                 changed_mask = changed_mask | (merged[new_col] != merged[cur_col])
 
-        new_keys = merged[merged[f"{self.tracked_cols[0]}_current"].isna()][self.key_col].unique() \
-            if f"{self.tracked_cols[0]}_current" in merged.columns else []
-        changed_keys = merged[changed_mask & merged[f"{self.tracked_cols[0]}_current"].notna()][self.key_col].unique() \
-            if f"{self.tracked_cols[0]}_current" in merged.columns else []
+        new_keys = (
+            merged[merged[f"{self.tracked_cols[0]}_current"].isna()][self.key_col].unique()
+            if f"{self.tracked_cols[0]}_current" in merged.columns
+            else []
+        )
+        changed_keys = (
+            merged[changed_mask & merged[f"{self.tracked_cols[0]}_current"].notna()][
+                self.key_col
+            ].unique()
+            if f"{self.tracked_cols[0]}_current" in merged.columns
+            else []
+        )
 
-        new_records = incoming[incoming[self.key_col].isin(list(new_keys) + list(changed_keys))].copy()
+        new_records = incoming[
+            incoming[self.key_col].isin(list(new_keys) + list(changed_keys))
+        ].copy()
         new_records["effective_from"] = datetime.utcnow()
         new_records["effective_to"] = None
         new_records["is_current"] = True

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import httpx
 from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
@@ -44,7 +44,7 @@ class WeatherAPIExtractor:
         data = resp.json()
         return WeatherSnapshot(
             location_id=location_id,
-            timestamp=datetime.now(tz=timezone.utc),
+            timestamp=datetime.now(tz=UTC),
             temp_c=data["main"]["temp"],
             humidity_pct=data["main"]["humidity"],
             wind_kmh=data["wind"]["speed"] * 3.6,  # m/s -> km/h

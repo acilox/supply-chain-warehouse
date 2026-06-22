@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from statistics import mean, pstdev
 
 import pandas as pd
@@ -22,9 +21,7 @@ class IoTProcessor:
         self.temp_max = s.telemetry_temp_max_c
         self.zscore_threshold = s.telemetry_anomaly_zscore
 
-    def windowed_aggregate(
-        self, readings_df: pd.DataFrame, window: str = "5min"
-    ) -> pd.DataFrame:
+    def windowed_aggregate(self, readings_df: pd.DataFrame, window: str = "5min") -> pd.DataFrame:
         """Resample by device + window. Returns mean/min/max per metric."""
         if readings_df.empty:
             return pd.DataFrame()
